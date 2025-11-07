@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         String     @id @default(cuid())
+  name       String
+  email      String     @unique
+  password   String
+  bio        String?
+  skills     String[]
+  techStack  String[]
+  github     String?
+  twitter    String?
+  profilePic String?
+  posts      Post[]
+  comments   Comment[]
+  bookmarks  Bookmark[]
+  projects   Project[]
+
+  followers Follow[] @relation("Followers")
+  following Follow[] @relation("Following")
+
+  messagesSent     Message[] @relation("MessagesSent")
+  messagesReceived Message[] @relation("MessagesReceived")
+
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  likes         Like[]
+  dislikes      Dislike[]
+}
+
+model Post {
+  id          String   @id @default(cuid())
+  authorId    String
+  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  content     String
+  imageUrl    String?
+  codeSnippet String?
+  tags        String[]
+  type        PostType @default(POST)
+  createdAt   DateTime @default(now())
+
+  comments  Comment[]
+  likes     Like[]
+  dislikes  Dislike[]
+  bookmarks Bookmark[]
+}
+
+enum PostType {
+  POST
+  THREAD
+  PROJECT
+  TIP
+  QUESTION
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  parentId  String?
+  content   String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Dislike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  follower    User     @relation("Following", fields: [followerId], references: [id])
+  followerId  String
+  following   User     @relation("Followers", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  sender     User     @relation("MessagesSent", fields: [senderId], references: [id])
+  senderId   String
+  receiver   User     @relation("MessagesReceived", fields: [receiverId], references: [id])
+  receiverId String
+  isRead     Boolean  @default(false)
+  content    String
+  imageUrl   String?
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  refId     String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  NEW_FOLLOWER
+  POST_LIKE
+  POST_DISLIKE
+  POST_COMMENT
+  NEW_MESSAGE
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String
+  githubUrl   String?
+  techStack   String[]
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
